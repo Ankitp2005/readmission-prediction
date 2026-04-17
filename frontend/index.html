@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AI Readmission Core</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet"/>
+    <style>
+        body {
+            margin: 0;
+            background-color: #050505;
+            color: #ffffff;
+            font-family: 'Outfit', sans-serif;
+            overflow: hidden; /* STRICT: No scrollbars allowed */
+            height: 100vh;
+            width: 100vw;
+            perspective: 1000px;
+        }
+        
+        /* Ambient Animated Mesh Gradient Glows */
+        .ambient-glow {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(140px);
+            opacity: 0.6;
+            z-index: -1;
+            animation: drift 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glow-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: #00d2ff; }
+        .glow-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: #3a7bd5; animation-delay: -5s; }
+        .glow-3 { top: 40%; left: 30%; width: 40vw; height: 40vw; background: #61045f; opacity: 0.4; animation-delay: -10s; }
+
+        @keyframes drift {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(10%, 15%) scale(1.2); }
+        }
+
+        /* 3D Glass Surface */
+        .glass-3d {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transform-style: preserve-3d;
+        }
+
+        /* Glowing inputs */
+        .cyber-input {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+            cursor: pointer; /* Force pointer for interactivity */
+        }
+        .cyber-input:focus {
+            outline: none;
+            border-color: #00d2ff;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.3), inset 0 0 10px rgba(0, 210, 255, 0.1);
+            background: rgba(0, 210, 255, 0.05);
+        }
+
+        /* Force readable dropdown options */
+        select.cyber-input option {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            padding: 10px;
+        }
+
+        /* Range Slider Restyle */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            width: 100%;
+            cursor: pointer; /* Clear double arrow look */
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #fff;
+            margin-top: -7px;
+            box-shadow: 0 0 15px #00d2ff;
+            cursor: pointer; /* Force standard pointer */
+            border: 2px solid #00d2ff;
+        }
+
+        /* Feature Label Clarity */
+        .feature-label {
+            color: #e5e7eb; /* Brighter gray (gray-200/300) */
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        /* Floating Animation */
+        .float-anim {
+            animation: floating 6s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0% { transform: translateY(0px) rotateX(0deg); }
+            50% { transform: translateY(-15px) rotateX(2deg); }
+            100% { transform: translateY(0px) rotateX(0deg); }
+        }
+
+        /* Submit Button */
+        .btn-core {
+            position: relative;
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            z-index: 1;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .btn-core::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+            opacity: 0; transition: opacity 0.3s ease; z-index: -1;
+        }
+        .btn-core:hover::before { opacity: 1; }
+        .btn-core:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0, 210, 255, 0.4);
+        }
+
+        /* Modal Blur Backing */
+        #resultModal {
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+        }
+
+        /* Ring Animation for Result */
+        .ring-hologram {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotateX(60deg);
+            width: 300px; height: 300px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 210, 255, 0.2);
+            box-shadow: 0 0 40px rgba(0, 210, 255, 0.1), inset 0 0 40px rgba(0, 210, 255, 0.1);
+            animation: spin 10s linear infinite;
+        }
+        .ring-2 { width: 400px; height: 400px; animation-direction: reverse; animation-duration: 15s; border-color: rgba(97, 4, 95, 0.3); box-shadow: 0 0 50px rgba(97,4,95,0.2); }
+        .ring-3 { width: 200px; height: 200px; border-style: dashed; border-color: #00d2ff; border-width: 1px; animation-duration: 20s;}
+        
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotateX(60deg) rotateZ(360deg); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 210, 255, 0.5); }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Ambient Background -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
+
+    <main class="min-h-screen relative flex flex-col items-center pt-8 pb-12 px-6">
+        
+        <!-- Compact Hero -->
+        <header class="text-center z-10 mb-8 max-w-4xl mx-auto float-anim" id="hero3D">
+            <h1 class="text-4xl md:text-5xl font-black tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-br from-white via-white to-gray-500 leading-tight">
+                AI Readmission <span class="bg-clip-text text-transparent bg-gradient-to-r from-[#00d2ff] to-[#3a7bd5]">Core</span>
+            </h1>
+            <p class="text-sm text-gray-400 font-light tracking-wide">
+                Configure clinical parameters to generate a prediction trajectory.
+            </p>
+        </header>
+
+        <!-- Condensed 3D Glass Engine Console -->
+        <form id="predictionForm" onsubmit="submitPrediction(event)" class="w-full max-w-[1200px] z-10">
+            <div class="glass-3d p-6 md:p-8" id="console3D">
+                
+                <div class="flex items-center gap-3 mb-6 border-b border-[rgba(255,255,255,0.05)] pb-4">
+                    <div class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_red] animate-pulse"></div>
+                    <h2 class="text-xl font-bold tracking-tight">System Controls</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-6">
+                    
+                    <!-- 1. Season -->
+                    <div class="space-y-1">
+                        <label class="feature-label">Season</label>
+                        <select name="season" class="w-full cyber-input rounded-lg px-3 py-2 text-sm cursor-pointer">
+                            <option value="0">Spring</option>
+                            <option value="2">Summer</option>
+                            <option value="1">Fall</option>
+                            <option value="3">Winter</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. Age -->
+                    <div class="space-y-1">
+                        <label class="feature-label">Age</label>
+                        <input name="age" type="number" value="65" class="w-full cyber-input rounded-lg px-3 py-2 text-sm font-bold text-center"/>
+                    </div>
+
+                    <!-- 3. Region -->
+                    <div class="space-y-1">
+                        <label class="feature-label">Region</label>
+                        <select name="region" class="w-full cyber-input rounded-lg px-3 py-2 text-sm cursor-pointer">
+                            <option value="2">North</option>
+                            <option value="3">South</option>
+                            <option value="0">East</option>
+                            <option value="1">West</option>
+                            <option value="4">Central</option>
+                        </select>
+                    </div>
+
+                    <!-- 4. Insurance -->
+                    <div class="space-y-1">
+                        <label class="feature-label">Insurance</label>
+                        <select name="insurance_type" class="w-full cyber-input rounded-lg px-3 py-2 text-sm cursor-pointer">
+                            <option value="1">Private</option>
+                            <option value="0">Medicare</option>
+                            <option value="3">Medicaid</option>
+                            <option value="2">Uninsured</option>
+                        </select>
+                    </div>
+
+                    <!-- 5. Primary Diagnosis -->
+                    <div class="space-y-1 lg:col-span-2">
+                        <label class="feature-label">Primary Diagnosis</label>
+                        <select name="primary_diagnosis" class="w-full cyber-input rounded-lg px-3 py-2 text-sm cursor-pointer">
+                            <option value="7">Heart Failure</option>
+                            <option value="0">Diabetes</option>
+                            <option value="1">Hypertension</option>
+                            <option value="2">Stroke</option>
+                            <option value="6">Kidney Disease</option>
+                            <option value="8">COPD</option>
+                            <option value="9">Pneumonia</option>
+                            <option value="5">Sepsis</option>
+                        </select>
+                    </div>
+
+                    <!-- 6. Treatment Type -->
+                    <div class="space-y-1">
+                        <label class="feature-label">Treatment</label>
+                        <select name="treatment_type" class="w-full cyber-input rounded-lg px-3 py-2 text-sm cursor-pointer">
+                            <option value="1">Medical</option>
+                            <option value="2">Surgical</option>
+                            <option value="0">Interventional</option>
+                            <option value="3">Conservative</option>
+                        </select>
+                    </div>
+
+                    <!-- 7. Discharge disposition -->
+                    <div class="space-y-1">
+                        <label class="feature-label">Discharge</label>
+                        <select name="discharge_disposition" class="w-full cyber-input rounded-lg px-3 py-2 text-sm cursor-pointer">
+                            <option value="2">Home</option>
+                            <option value="0">Home Health</option>
+                            <option value="1">Skilled Nursing</option>
+                            <option value="3">Rehab</option>
+                        </select>
+                    </div>
+
+                    <!-- 8. Comorbidities -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center pr-1">
+                            <label class="feature-label">Comorbidities</label>
+                            <span class="text-[#00d2ff] font-bold text-xs" id="val_como">2</span>
+                        </div>
+                        <input type="range" name="comorbidities_count" min="0" max="15" value="2" oninput="document.getElementById('val_como').innerText=this.value" class="h-1"/>
+                    </div>
+
+                    <!-- 9. Length of Stay -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center pr-1">
+                            <label class="feature-label">Stay (d)</label>
+                            <span class="text-[#00d2ff] font-bold text-xs"><span id="val_stay">5</span></span>
+                        </div>
+                        <input type="range" name="length_of_stay" min="1" max="60" value="5" oninput="document.getElementById('val_stay').innerText=this.value" class="h-1"/>
+                    </div>
+
+                    <!-- 10. Medications -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center pr-1">
+                            <label class="feature-label">Meds</label>
+                            <span class="text-[#00d2ff] font-bold text-xs"><span id="val_meds">8</span></span>
+                        </div>
+                        <input type="range" name="medications_count" min="0" max="50" value="8" oninput="document.getElementById('val_meds').innerText=this.value" class="h-1"/>
+                    </div>
+
+                    <!-- 11. Follow Up -->
+                    <div class="space-y-1">
+                        <label class="feature-label">Visits (1yr)</label>
+                        <input name="followup_visits_last_year" type="number" value="2" class="w-full cyber-input rounded-lg px-3 py-2 text-sm font-bold text-center"/>
+                    </div>
+
+                    <!-- 12. Prev Readmissions -->
+                    <div class="space-y-1">
+                        <label class="feature-label">Prev Readm</label>
+                        <input name="prev_readmissions" type="number" value="5" class="w-full cyber-input rounded-lg px-3 py-2 text-sm font-bold text-center"/>
+                    </div>
+
+                    <!-- 13. Risk Score -->
+                    <div class="space-y-1 lg:col-span-2">
+                        <label class="feature-label">Algorithmic Risk Baseline</label>
+                        <div class="flex items-center gap-4">
+                            <input name="readmission_risk_score" type="number" step="0.01" min="0" max="1" value="0.45" class="w-[80px] cyber-input rounded-lg px-3 py-2 text-xs font-bold text-center text-[#00d2ff]"/>
+                            <div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full bg-[#00d2ff] w-[45%]" id="risk_bar"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-8 flex justify-center">
+                    <button type="submit" class="btn-core rounded-full font-bold text-lg px-12 py-4 tracking-wide flex items-center gap-3">
+                        <span id="btnText">Initiate Analysis</span>
+                        <svg id="btnSpinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Footer -->
+        <footer class="mt-20 text-center text-gray-600 text-sm tracking-widest uppercase">
+            Clinical Oracle // Advanced Predictive Modeling
+        </footer>
+
+        <!-- 3D Result Modal Hologram -->
+        <div id="resultModal" class="fixed inset-0 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-700 bg-black/60">
+            <!-- 3D Rotating Holographic Rings -->
+            <div class="absolute inset-0 pointer-events-none overflow-hidden" id="ringsContainer" style="perspective: 1200px;">
+                <div class="ring-hologram"></div>
+                <div class="ring-hologram ring-2"></div>
+                <div class="ring-hologram ring-3"></div>
+            </div>
+
+            <!-- Glass Modal Card -->
+            <div class="glass-3d w-full max-w-lg p-12 text-center transform scale-90 transition-transform duration-700 ease-out z-10" id="resultCard">
+                <div class="inline-block px-4 py-1.5 rounded-full border border-[#00d2ff]/30 bg-[#00d2ff]/10 text-xs font-bold tracking-widest text-[#00d2ff] mb-8 uppercase">
+                    Analysis Complete
+                </div>
+                
+                <h3 class="text-2xl text-gray-300 font-light mb-4">Probability of Readmission</h3>
+                <div class="text-8xl font-black mb-6 tracking-tighter" id="resScore">0%</div>
+                
+                <p id="resDesc" class="text-xl mb-12 font-medium tracking-wide"></p>
+                
+                <button onclick="closeModal()" class="w-full py-4 rounded-xl border border-white/20 hover:bg-white/10 transition-colors font-semibold tracking-wider">
+                    DEACTIVATE & RESET
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Debug mode
+        const DEBUG = true;
+
+        // Pseudo 3D Parallax Effect
+        let isFocused = false;
+        
+        document.addEventListener('mousemove', (e) => {
+            if (isFocused) return; // Don't tilt if user is typing
+            
+            const consoleEl = document.getElementById('console3D');
+            const heroEl = document.getElementById('hero3D');
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 80; // More subtle
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 80;
+            
+            if (consoleEl) consoleEl.style.transform = `rotateY(${xAxis}deg) rotateX(${-yAxis}deg)`;
+            if (heroEl) heroEl.style.transform = `translateY(${yAxis}px) translateX(${-xAxis}px)`;
+        });
+
+        // Track focus to prevent jitter during input
+        document.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('focus', () => {
+                isFocused = true;
+                const consoleEl = document.getElementById('console3D');
+                if (consoleEl) consoleEl.style.transform = `rotateY(0deg) rotateX(0deg)`;
+            });
+            el.addEventListener('blur', () => {
+                isFocused = false;
+            });
+            // Live update for risk bar
+            if(el.name === 'readmission_risk_score') {
+                el.addEventListener('input', (e) => {
+                    const bar = document.getElementById('risk_bar');
+                    if(bar) bar.style.width = (e.target.value * 100) + '%';
+                });
+            }
+        });
+
+        async function submitPrediction(e) {
+            if (e) e.preventDefault();
+            
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            
+            // UI Loading logic
+            if (btnText) btnText.innerText = "Processing Data...";
+            if (btnSpinner) btnSpinner.classList.remove('hidden');
+
+            const form = document.getElementById('predictionForm');
+            const formData = new FormData(form);
+            const payload = {};
+            
+            for (let [key, value] of formData.entries()) {
+                const numVal = parseFloat(value);
+                payload[key] = isNaN(numVal) ? 0 : numVal;
+            }
+
+            if (DEBUG) console.log("Sending payload:", payload);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server returned ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                if (DEBUG) console.log("Received data:", data);
+                
+                setTimeout(() => { showModal(data); }, 300);
+                
+            } catch (err) {
+                console.error("Connection error:", err);
+                alert("Connection failed: " + err.message);
+                resetBtn();
+            }
+        }
+
+        function resetBtn() {
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            if (btnText) btnText.innerText = "Initiate Subroutine";
+            if (btnSpinner) btnSpinner.classList.add('hidden');
+        }
+
+        function showModal(data) {
+            const prob = data.probability_of_readmission;
+            const perc = Math.round(prob * 100);
+            
+            const modal = document.getElementById('resultModal');
+            const card = document.getElementById('resultCard');
+            const scoreEl = document.getElementById('resScore');
+            const descEl = document.getElementById('resDesc');
+            
+            if (modal) modal.classList.remove('opacity-0', 'pointer-events-none');
+            if (card) {
+                card.classList.remove('scale-90');
+                card.classList.add('scale-100');
+            }
+
+            if(data.prediction === 1) {
+                if (scoreEl) scoreEl.className = "text-8xl font-black mb-6 tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-red-400 to-red-600";
+                if (descEl) {
+                    descEl.innerText = "CRITICAL RISK IDENTIFIED";
+                    descEl.className = "text-xl mb-12 font-bold tracking-widest text-red-500 uppercase";
+                }
+                
+                document.querySelectorAll('.ring-hologram').forEach(r => {
+                    r.style.borderColor = "rgba(255, 0, 0, 0.4)";
+                    r.style.boxShadow = "0 0 40px rgba(255, 0, 0, 0.2), inset 0 0 40px rgba(255, 0, 0, 0.2)";
+                });
+            } else {
+                if (scoreEl) scoreEl.className = "text-8xl font-black mb-6 tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-[#00d2ff] to-[#3a7bd5]";
+                if (descEl) {
+                    descEl.innerText = "Trajectory Stable";
+                    descEl.className = "text-xl mb-12 font-medium tracking-widest text-[#00d2ff] uppercase";
+                }
+                
+                document.querySelectorAll('.ring-hologram').forEach(r => {
+                    r.style.borderColor = "rgba(0, 210, 255, 0.2)";
+                    r.style.boxShadow = "0 0 40px rgba(0, 210, 255, 0.1), inset 0 0 40px rgba(0, 210, 255, 0.1)";
+                });
+            }
+
+            animateValue("resScore", 0, perc, 1000);
+            resetBtn();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('resultModal');
+            const card = document.getElementById('resultCard');
+            if (modal) modal.classList.add('opacity-0', 'pointer-events-none');
+            if (card) {
+                card.classList.add('scale-90');
+                card.classList.remove('scale-100');
+            }
+        }
+
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            if (!obj) return;
+            
+            if (start === end) {
+                obj.innerHTML = end + '%';
+                return;
+            }
+            const range = end - start;
+            let current = start;
+            const increment = end > start ? 1 : -1;
+            const stepTime = Math.abs(Math.floor(duration / (range || 1)));
+            
+            const timer = setInterval(function() {
+                current += increment;
+                obj.innerHTML = current + '%';
+                if (current == end) {
+                    clearInterval(timer);
+                }
+            }, stepTime);
+        }
+    </script>
+</body>
+</html>
